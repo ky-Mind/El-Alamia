@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Komentar buku: semua orang boleh membaca, hanya pengguna login yang boleh menulis, hanya pemilik yang boleh menghapus.
+    match /comments/{id} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['bookId', 'uid', 'name', 'photo', 'text', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.bookId is string && request.resource.data.bookId.size() < 80
+        && request.resource.data.name is string && request.resource.data.name.size() < 81
+        && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
